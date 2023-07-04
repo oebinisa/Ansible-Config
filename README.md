@@ -1,8 +1,8 @@
-## Ansible-Config
+# Ansible-Config
 
 Basic Ansible configuration to set up a load balancer, two Web servers, and a database server via a control system
 
-# System Structure Setup:
+## System Structure Setup:
 
                 ─────────
                │Control
@@ -19,23 +19,27 @@ Basic Ansible configuration to set up a load balancer, two Web servers, and a da
     Prerequisite: Python
 
     OS: Fresh Ubuntu Installation
-    sudo apt-get install software-properties-common
-    sudo apt-add-repository ppa:ansible/ansible
-    sudo apt-get update
-    sudo apt-get install ansible
+
+            sudo apt-get install software-properties-common
+            sudo apt-add-repository ppa:ansible/ansible
+            sudo apt-get update
+            sudo apt-get install ansible
 
     OS: Mac
-    pip install --user ansible (or)
-    brew install ansible
+
+            pip install --user ansible (or)
+            brew install ansible
 
     Verify Installation:
-    ansible-playbook --version
+
+            ansible-playbook --version
 
 2.  Create a Project folder
 
 3.  Create the inventory.txt file (note the groupings)
-    [loadbalancer]
-    lb01
+
+        [loadbalancer]
+        lb01
 
         [webserver]
         app01
@@ -48,15 +52,18 @@ Basic Ansible configuration to set up a load balancer, two Web servers, and a da
         ebinisa ansible_connection=local
 
 4.  Parse the hosts into Ansible (inside project folder)
-    ansible -i inventory.txt --list-hosts all
+
+        ansible -i inventory.txt --list-hosts all
 
     Create ansible.cfg file:
     This helps to parse without mentioning the local inventory
-    [default]
-    inventory = ./inventory.txt
+
+        [default]
+        inventory = ./inventory.txt
 
     Verify:
-    ansible --list-hosts all
+
+        ansible --list-hosts all
 
 5.  Create Playbooks
     Create main playbooks/hostname.yml:
@@ -67,29 +74,37 @@ Basic Ansible configuration to set up a load balancer, two Web servers, and a da
             - command: hostname
 
     Create loadbalancer.yml:
-    --- - hosts: loadbalancer
-    become: true
-    tasks: - name: install nginx
-    apt: name=nginx state=present update_cache=yes
+
+        ---
+        - hosts: loadbalancer
+          become: true
+          tasks:
+            - name: install nginx
+            apt: name=nginx state=present update_cache=yes
 
     Create database.yml:
-    --- - hosts: database
-    become: true
-    tasks: - name: install mysql-server
-    apt: name=mysql-server state=present update_cache=yes
+
+        ---
+        - hosts: database
+          become: true
+          tasks:
+            - name: install mysql-server
+            apt: name=mysql-server state=present update_cache=yes
 
     Executive the above using the script below:
-    ansible-playbook control.yml
-    ansible-playbook playbooks/hostname.yml
-    ansible-playbook loadbalancer.yml
-    ansible-playbook database.yml
 
-# Tasks:
+        ansible-playbook control.yml
+        ansible-playbook playbooks/hostname.yml
+        ansible-playbook loadbalancer.yml
+        ansible-playbook database.yml
+
+## Tasks:
 
 ======
 
 Ping All:
-ansible -m ping all
+
+    ansible -m ping all
 
     ansible -m command -a "hostname" all
     ansible -a "hostname" all
