@@ -1,6 +1,6 @@
 # Ansible-Config
 
-Basic Ansible configuration to set up a load balancer using NGiNX, two Web servers, and a database server via a control system
+Basic Ansible configuration to set up a load balancer using NGiNX, two Web servers, and a database server (MySQL) via a control system.
 
 ## System Structure Setup:
 
