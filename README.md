@@ -1,6 +1,6 @@
 # Ansible-Config
 
-Basic Ansible configuration to set up a load balancer, two Web servers, and a database server via a control system
+Basic Ansible configuration to set up a load balancer using NGiNX, two Web servers, and a database server via a control system
 
 ## System Structure Setup:
 
@@ -13,6 +13,8 @@ Basic Ansible configuration to set up a load balancer, two Web servers, and a da
     │lb01       │App01 - App02      │db01
     └──────     └──────────────     └──────
     LoadBalancer    Webserver       Database
+
+## Steps
 
 1.  Install Ansible in the Control Unit:
 
