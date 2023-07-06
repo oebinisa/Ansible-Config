@@ -1,6 +1,11 @@
 # Ansible-Config
 
-Basic Ansible configuration to set up a load balancer using NGiNX, two Web servers, and a database server (MySQL) via a control system.
+## Introduction
+
+Basic Ansible configuration to set up a 3-tier web application architecture consisting of a load balancer tier (NGiNX), an applicaation tier - two Web servers, and a database tier (MySQL server). All being accessed via a control machine/system.
+
+- All commands to be run through a role in the Control machine.
+- The Control machine needs SSH access to the other machines
 
 ## System Structure Setup:
 
@@ -16,9 +21,11 @@ Basic Ansible configuration to set up a load balancer using NGiNX, two Web serve
 
 ## Steps
 
-1.  Install Ansible in the Control Unit:
+1.  Install Ansible on the Control Machine:
 
-    Prerequisite: Python
+    Web: https://docs.ansible.com/
+
+    Prerequisite: Python 2.6 or 2.7
 
     OS: Fresh Ubuntu Installation
 
@@ -41,17 +48,17 @@ Basic Ansible configuration to set up a load balancer using NGiNX, two Web serve
     Concluding folder content/structure:
 
         .
-        ├── ansible.cfg           # Playbook file.
-        ├── inventory.txt         #
-        ├── control.yml           # Inventory file.
-        ├── database.yml          # The key pair file. Store in
-        ├── database.yml          #
-        ├── loadbalancer.yml      #
-        ├── webserver.yml         #
-        ├── playbooks
+        ├── inventory.txt           # Specify potential target machines in advance
+        ├── ansible.cfg             # Helps to parse the hosts into Ansible
+        ├── playbooks               # Plays are a group of tasks that can be executed in bulk
         │   ├── hostname.yml
         │   ├── stack_restart.yml
         │   └── stack_status.yml
+        ├── control.yml             #
+        ├── database.yml            #
+        ├── database.yml            #
+        ├── loadbalancer.yml        #
+        ├── webserver.yml           #
         └── templates
             └── nginx.conf.j2
 
@@ -68,14 +75,14 @@ Basic Ansible configuration to set up a load balancer using NGiNX, two Web serve
         db01
 
         [control]
-        ebinisa ansible_connection=local
+        controlhost ansible_connection=local
 
-4.  Parse the hosts into Ansible (inside project folder)
+    Verify: (inside project folder)
 
         ansible -i inventory.txt --list-hosts all
 
-    Create ansible.cfg file:
-    This helps to parse without mentioning the local inventory
+4.  Create ansible.cfg file:
+    This helps to parse the hosts into Ansible without mentioning the local inventory
 
         [default]
         inventory = ./inventory.txt
@@ -84,13 +91,34 @@ Basic Ansible configuration to set up a load balancer using NGiNX, two Web serve
 
         ansible --list-hosts all
 
-5.  Create Playbooks
+5.  Create Playbooks.
+    Ensure all necessary packages are installed on the various machines.
+    Install and configure them accordingly
+
     Create main playbooks/hostname.yml:
 
         ---
         - hosts: all
           tasks:
-            - command: hostname
+            - name: get server hostname
+              command: hostname
+
+        # See playbooks/hostname.yml for complete code
+
+    Create control.yml:
+    This would help to update and install all dependencies on the Control Machine
+
+        ---
+        - hosts: control
+          become: true
+          tasks:
+            - name: install tools
+            apt: name={{item}} state=present update_cache=yes
+            with_items:
+                - curl
+                - python-httplib2
+
+        # See control.yml for complete code
 
     Create loadbalancer.yml:
 
@@ -101,6 +129,8 @@ Basic Ansible configuration to set up a load balancer using NGiNX, two Web serve
             - name: install nginx
             apt: name=nginx state=present update_cache=yes
 
+        # See loadbalancer.yml for complete code
+
     Create database.yml:
 
         ---
@@ -110,12 +140,63 @@ Basic Ansible configuration to set up a load balancer using NGiNX, two Web serve
             - name: install mysql-server
             apt: name=mysql-server state=present update_cache=yes
 
-    Executive the above using the script below:
+        # See database.yml for complete code
 
-        ansible-playbook control.yml
+    Create webserver.yml:
+
+        ---
+        - hosts: webserver
+          become: true
+          tasks:
+            - name: install web components
+              apt: name={{item}} state=present update_cache=yes
+              with_items:
+                - apache2
+                - libapache2-mod-wsgi
+                - python-pip
+                - python-virtualenv
+                - python-mysqldb
+
+        # See webserver.yml for complete code
+
+Executive the above using the script below:
+
         ansible-playbook playbooks/hostname.yml
+        ansible-playbook control.yml
         ansible-playbook loadbalancer.yml
+        ansible-playbook webserver.yml
         ansible-playbook database.yml
+
+6.  Create Operational Playbooks: stack_restart.yml and stack_status.yml
+    These would help the ease of restarting the stack and checking stack status post implementation/configuration
+
+    Create playbooks/stack_restart.yml:
+
+        ---
+        # Bring stack down
+        - hosts: loadbalancer
+          become: true
+          tasks:
+            - services: name=nginx statee=stopped
+            - wait_for: port=80 state=drained
+
+        - hosts: webserver
+
+        # See playbooks/stack_restart.yml for complete code
+
+    Create playbooks/stack_status.yml
+
+        ---
+        - hosts: loadbalancer
+          become: true
+          tasks:
+            - name: verify nginx service
+              command: service nginx status
+
+            - name: verify nginx is listening on 80
+              wait_for: port=80 timeout=1 # default is 300secs
+
+        # See playbooks/stack_status.yml for complete code
 
 ## Tasks:
 
@@ -123,9 +204,13 @@ Basic Ansible configuration to set up a load balancer using NGiNX, two Web serve
 
 Ping All:
 
-    ansible -m ping all
+    ansible -m ping all     # Test Ansible connectivity to all hosts
 
     ansible -m command -a "hostname" all
     ansible -a "hostname" all
 
-The last 2 are same cos command is the default module
+    ansible -a "/bin/false" all
+
+The last 2nd and 3rd are same cos command is the default module.
+
+Get more module commands at https://doc.ansible.com/ansible/modules_by_category.html
