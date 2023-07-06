@@ -36,7 +36,24 @@ Basic Ansible configuration to set up a load balancer using NGiNX, two Web serve
 
             ansible-playbook --version
 
-2.  Create a Project folder
+2.  Create a Project folder.
+
+    Concluding folder content/structure:
+
+        .
+        ├── ansible.cfg           # Playbook file.
+        ├── inventory.txt         #
+        ├── control.yml           # Inventory file.
+        ├── database.yml          # The key pair file. Store in
+        ├── database.yml          #
+        ├── loadbalancer.yml      #
+        ├── webserver.yml         #
+        ├── playbooks
+        │   ├── hostname.yml
+        │   ├── stack_restart.yml
+        │   └── stack_status.yml
+        └── templates
+            └── nginx.conf.j2
 
 3.  Create the inventory.txt file (note the groupings)
 
