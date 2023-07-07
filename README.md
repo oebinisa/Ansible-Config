@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Basic Ansible configuration to set up a 3-tier web application architecture consisting of a load balancer tier (NGiNX), an applicaation tier - two Web servers, and a database tier (MySQL server). All being accessed via a control machine/system.
+Basic Ansible configuration to set up a 3-tier web application architecture consisting of a load balancer tier (NGiNX), an applicaation tier - two Web servers (Apache webserver), and a database tier (MySQL server). All being accessed via a control machine/system.
 
 - All commands to be run through a role in the Control machine.
 - The Control machine needs SSH access to the other machines
@@ -82,6 +82,7 @@ Basic Ansible configuration to set up a 3-tier web application architecture cons
         ansible -i inventory.txt --list-hosts all
 
 4.  Create ansible.cfg file:
+
     This helps to parse the hosts into Ansible without mentioning the local inventory
 
         [default]
@@ -92,7 +93,9 @@ Basic Ansible configuration to set up a 3-tier web application architecture cons
         ansible --list-hosts all
 
 5.  Create Playbooks.
+
     Ensure all necessary packages are installed on the various machines.
+
     Install and configure them accordingly
 
     Create main playbooks/hostname.yml:
@@ -106,6 +109,7 @@ Basic Ansible configuration to set up a 3-tier web application architecture cons
         # See playbooks/hostname.yml for complete code
 
     Create control.yml:
+
     This would help to update and install all dependencies on the Control Machine
 
         ---
@@ -131,17 +135,6 @@ Basic Ansible configuration to set up a 3-tier web application architecture cons
 
         # See loadbalancer.yml for complete code
 
-    Create database.yml:
-
-        ---
-        - hosts: database
-          become: true
-          tasks:
-            - name: install mysql-server
-            apt: name=mysql-server state=present update_cache=yes
-
-        # See database.yml for complete code
-
     Create webserver.yml:
 
         ---
@@ -159,6 +152,17 @@ Basic Ansible configuration to set up a 3-tier web application architecture cons
 
         # See webserver.yml for complete code
 
+    Create database.yml:
+
+        ---
+        - hosts: database
+          become: true
+          tasks:
+            - name: install mysql-server
+            apt: name=mysql-server state=present update_cache=yes
+
+        # See database.yml for complete code
+
 Executive the above using the script below:
 
         ansible-playbook playbooks/hostname.yml
@@ -167,7 +171,32 @@ Executive the above using the script below:
         ansible-playbook webserver.yml
         ansible-playbook database.yml
 
-6.  Create Operational Playbooks: stack_restart.yml and stack_status.yml
+6.  Configure the Load Balancer (NGiNX) to render pages from the Webservers instead of the default NGiNX pages using the NGiNX template file module
+
+    Instead of just copying like the copy module, the template would sub out any variables supplied first before rendering the final content into the end host.
+
+    Create templates/nginx.conf.j2:
+
+        upstream demo {
+            {% for server in groups.webserver %}
+                server {{ server }};
+            {% endfor %}
+        }
+
+        server {
+            listen 80;
+
+            location / {
+                proxy_pass http://demo;
+            }
+        }
+
+    Execute the loadbalancer playbook when done:
+
+        ansible-playbook loadbalancer.yml
+
+7.  Create Operational Playbooks: stack_restart.yml and stack_status.yml
+
     These would help the ease of restarting the stack and checking stack status post implementation/configuration
 
     Create playbooks/stack_restart.yml:
@@ -214,3 +243,18 @@ Ping All:
 The last 2nd and 3rd are same cos command is the default module.
 
 Get more module commands at https://doc.ansible.com/ansible/modules_by_category.html
+
+Curl the Webservers, the Load Balancer, and the Database a couple of times to verify connection
+
+    curl app01
+    curl app02
+
+    curl lb01
+    curl lb01
+    curl lb01
+
+    curl app01/db
+    curl app02/db
+    curl lb01/db
+    curl lb01/db
+    curl lb01/db

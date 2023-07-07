@@ -4,7 +4,7 @@
   become: true
   tasks:
     - services: name=nginx statee=stopped
-    - wait_for: port=80 state=drained
+    - wait_for: port=80 state=drained # default state=started
 
 - hosts: webserver
   become: true
